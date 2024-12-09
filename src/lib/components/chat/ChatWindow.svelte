@@ -11,6 +11,7 @@
 	import EosIconsLoading from "~icons/eos-icons/loading";
 
 	import ChatInput from "./ChatInput.svelte";
+	import VoiceInput from "../VoiceInput.svelte";
 	import StopGeneratingBtn from "../StopGeneratingBtn.svelte";
 	import type { Model } from "$lib/types/Model";
 	import WebSearchToggle from "../WebSearchToggle.svelte";
@@ -58,6 +59,7 @@
 	let message: string;
 	let timeout: ReturnType<typeof setTimeout>;
 	let isSharedRecently = false;
+	let baseMessage = '';     // Original input when recording starts
 	$: pastedLongContent = false;
 	$: $page.params.id && (isSharedRecently = false);
 
@@ -467,6 +469,24 @@
 								<EosIconsLoading />
 							</div>
 						{:else}
+							<VoiceInput
+								on:startRecording={() => {
+									if (!$page.data.loginRequired) {
+										baseMessage = message || '';
+									}
+								}}
+								on:interimTranscript={(ev) => {
+									if ($page.data.loginRequired) return;
+									message = baseMessage + (baseMessage.length > 0 ? ' ' : '') + ev.detail;
+									console.log('interim:', message);
+								}}
+								on:transcript={(ev) => {
+									if ($page.data.loginRequired) return;
+									baseMessage += (baseMessage.length > 0 ? ' ' : '') + ev.detail;
+									console.log('final:', baseMessage);
+									message = baseMessage;
+								}}
+							/>
 							<button
 								class="btn mx-1 my-1 h-[2.4rem] self-end rounded-lg bg-transparent p-1 px-[0.7rem] text-gray-400 enabled:hover:text-gray-700 disabled:opacity-60 enabled:dark:hover:text-gray-100 dark:disabled:opacity-40"
 								disabled={!message || isReadOnly}
